@@ -40,13 +40,6 @@ A modern **project expense tracking** web app with **team member login, OTP auth
 3. **Data Storage:**  
    - Expenses and users are stored in **Supabase tables** (`expenses` & `users`)
 
-## 📂 Project Structure
-
-├── index.html        # Main dashboard (expense tracker)
-├── login.html        # OTP-based login page
-├── assets/           # Images, screenshots, and static files
-└── README.md         # Project documentation
-
 
 ## ⚙️ Setup Instructions
 
@@ -73,7 +66,7 @@ A modern **project expense tracking** web app with **team member login, OTP auth
 
 3. **Run the App**
 
-   * Open `login.html` in a browser
+   * Open `index.html` in a browser
    * Login and start tracking expenses!
 
 ## 📄 License
