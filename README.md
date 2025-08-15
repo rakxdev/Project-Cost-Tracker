@@ -1,4 +1,4 @@
-# 💰 Minor Project Cost Tracker
+# 💰 Project Cost Tracker
 
 A modern **project expense tracking** web app with **team member login, OTP authentication, and real-time expense updates** powered by **Supabase**.
 
@@ -45,7 +45,7 @@ A modern **project expense tracking** web app with **team member login, OTP auth
 
 1. **Clone Repository**
    ```bash
-   git clone https://github.com/your-username/minor-project-cost-tracker.git
+   git clone https://github.com/rakxdev/Project-Tracker
    cd minor-project-cost-tracker
    ```
 
