@@ -45,7 +45,7 @@ A modern **project expense tracking** web app with **team member login, OTP auth
 
 1. **Clone Repository**
    ```bash
-   git clone https://github.com/rakxdev/Project-Tracker
+   git clone https://github.com/rakxdev/Project-Cost-Tracker
    cd minor-project-cost-tracker
    ```
 
