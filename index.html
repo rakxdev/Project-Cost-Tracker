@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minor Project Cost Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00c6ff;
+            --secondary: #0072ff;
+            --dark: #0a0a1a;
+            --darker: #050510;
+            --light: #f0f8ff;
+            --accent: #ff2d75;
+            --success: #00e676;
+            /* Increase the opacity on card borders to make the edges more visible */
+            --card-bg: rgba(15, 20, 40, 0.7);
+            --card-border: rgba(0, 198, 255, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--darker), var(--dark));
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Layout for the project details section containing the main overview and the contribution card */
+        .project-details {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .project-details {
+                flex-direction: row;
+                align-items: stretch;
+            }
+
+            .project-overview {
+                flex: 3;
+            }
+
+            .contribution-card {
+                flex: 2;
+                max-width: 40%;
+            }
+        }
+
+        .contribution-card {
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: 1px solid var(--card-border);
+            position: relative;
+        }
+
+        .contribution-title {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .contribution-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-left: 12px;
+            position: relative;
+        }
+
+        .contribution-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .contribution-avatar {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-right: 10px;
+            color: #fff;
+        }
+
+        .contribution-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-right: auto;
+        }
+
+        .contribution-amount {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--success);
+        }
+
+        .contribution-row.current-member::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-right: 10px solid var(--accent);
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(0, 198, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 45, 117, 0.1) 0%, transparent 20%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(0, 198, 255, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 198, 255, 0.5);
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: rgba(255, 45, 117, 0.2);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 8px 15px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 45, 117, 0.5);
+        }
+
+        .project-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 0 20px rgba(0, 198, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+        }
+
+        .project-name {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+
+        .total-cost {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+
+        .cost-amount {
+            color: var(--success);
+            font-size: 3rem;
+            text-shadow: 0 0 10px rgba(0, 230, 118, 0.3);
+        }
+
+        .add-expense-btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 198, 255, 0.3);
+        }
+
+        .add-expense-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 198, 255, 0.5);
+        }
+
+        .add-expense-btn:active {
+            transform: translateY(0);
+        }
+
+        .expenses-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .expense-card {
+            /* Rounded card with dark body; the gradient border will be drawn via a pseudo-element */
+            border: none;
+            border-radius: 25px;
+            padding: 20px;
+            background: var(--card-bg);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 220px;
+        }
+
+        .expense-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 198, 255, 0.2);
+        }
+
+        /* Gradient border drawn using a pseudo-element. The mask ensures that the
+         * gradient only appears on the border area and not over the card content. */
+        .expense-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 2px;
+            /* thickness of border */
+            border-radius: inherit;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+
+        .user-avatar-small {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-bottom: 0;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .expense-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .user-name-small {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--light);
+        }
+
+        .expense-amount {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--success);
+            margin: 10px 0;
+        }
+
+        .expense-date {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .expense-notes {
+            font-style: italic;
+            color: #ddd;
+            line-height: 1.5;
+            /* Allow notes to expand naturally without truncation and break long strings */
+            max-height: none;
+            overflow: visible;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* No expand/collapse button needed since notes are always fully displayed */
+        .show-more-btn {
+            display: none;
+        }
+
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 900;
+        }
+
+        .auth-container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 30px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 0 30px rgba(0, 198, 255, 0.1);
+        }
+
+        .auth-container h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px;
+            background: rgba(10, 20, 40, 0.5);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 198, 255, 0.3);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 198, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            background: var(--success);
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            opacity: 1;
+        }
+
+        .notification.error {
+            background: var(--accent);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #expense-modal {
+            background: rgba(10, 20, 40, 0.85) !important;
+            backdrop-filter: blur(10px);
+            /* Increase the width slightly and reduce the height for a more balanced modal */
+            width: 90%;
+            max-width: 600px;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        @media (min-width: 768px) {
+            #expense-modal {
+                width: 500px;
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 50px;
+            color: #777;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(0, 198, 255, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .project-name {
+                font-size: 2rem;
+            }
+
+            .cost-amount {
+                font-size: 2.2rem;
+            }
+
+            .expenses-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Hide the header avatar and name while preserving the element for JS */
+        #user-name,
+        .user-avatar {
+            opacity: 0;
+            /* make them invisible */
+            width: 0;
+            height: 0;
+            overflow: hidden;
+            /* ensure they don’t take up space */
+            margin: 0;
+            padding: 0;
+        }
+
+        .contribution-avatar,
+        .user-avatar-small,
+        .user-avatar {
+            /* other styles… */
+            color: var(--dark);
+            /* or use var(--darker) if you prefer the slightly darker shade */
+        }
+
+        /* Ensure the date input uses a dark colour scheme so borders stay consistent */
+        input[type="date"] {
+            color-scheme: dark;
+        }
+
+        /* Invert the default calendar icon colour to white */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
+        /* Hide the default calendar icon in Chromium/WebKit-based browsers */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 0;
+        }
+
+        /* Position the date input relative so we can absolutely position our custom icon */
+        input[type="date"] {
+            position: relative;
+            color-scheme: dark;
+            /* keep the control consistent with your dark theme */
+        }
+
+        /* Insert a white calendar icon from Font Awesome */
+        input[type="date"]::after {
+            content: "\f073";
+            /* Unicode for fa-calendar in Font Awesome */
+            font-family: "Font Awesome 6 Free";
+            /* requires your existing Font Awesome import */
+            font-weight: 900;
+            /* use the solid style */
+            position: absolute;
+            right: 15px;
+            /* adjust spacing from the right edge */
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--light);
+            /* or any colour variable you prefer */
+            pointer-events: none;
+            /* ensures clicking still opens the date picker */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-chart-network"></i>
+                </div>
+                <h1>Minor Project</h1>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar" id="user-avatar">U</div>
+                <div id="user-name">User Name</div>
+                <button class="logout-btn" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+        <div class="project-header">
+            <!-- Wrap project overview and team contributions for side-by-side layout -->
+            <div class="project-details">
+                <div class="project-overview">
+                    <h2 class="project-name">Smart Hybrid Ac-Dc Power Supply With Bidirectional Power Flow Control</h2>
+                    <p>Total Project Cost</p>
+                    <div class="total-cost">
+                        ₹<span class="cost-amount" id="total-cost">0.00</span>
+                    </div>
+                    <button class="add-expense-btn" id="add-expense-btn">
+                        <i class="fas fa-plus-circle"></i> Add Daily Expense
+                    </button>
+                </div>
+                <div class="contribution-card">
+                    <h3 class="contribution-title">Team Contributions</h3>
+                    <div id="contribution-list"></div>
+                </div>
+            </div>
+        </div>
+        <div class="expenses-container" id="expenses-container"></div>
+        <div id="modal-overlay" class="hidden"></div>
+    </div>
+    <div id="expense-modal" class="auth-container hidden"
+        style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;">
+        <h2><i class="fas fa-receipt"></i> Add Expense</h2>
+        <div class="form-group">
+            <label for="expense-amount">Amount (₹)</label>
+            <input type="number" id="expense-amount" class="form-control" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+            <label for="expense-date">Date</label>
+            <input type="date" id="expense-date" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="expense-notes">Notes</label>
+            <textarea id="expense-notes" class="form-control" placeholder="What was this expense for?"
+                rows="3"></textarea>
+        </div>
+        <div class="modal-actions" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:20px;">
+            <button id="save-expense-btn" class="btn btn-primary" style="flex:1 1 auto;">Save Expense</button>
+            <button id="cancel-expense-btn" class="btn btn-secondary" style="flex:1 1 auto;">Cancel</button>
+        </div>
+    </div>
+    <div id="notification" class="notification">Operation completed successfully!</div>
+    <footer>
+        <p>Project Tracker © 2025 | Team Management System by ๏ ʟᴜᴍɪɴᴏ ⇗ ˣᵖ</p>
+    </footer>
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        // Supabase credentials (REPLACE THESE WITH YOUR ACTUAL Database URL & ANON KEY)
+        const SUPABASE_URL = '' 
+        const SUPABASE_ANON_KEY = ''        
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const userAvatar = document.getElementById('user-avatar');
+        const displayName = document.getElementById('user-name');
+        const totalCost = document.getElementById('total-cost');
+        const expensesContainer = document.getElementById('expenses-container');
+        const expenseModal = document.getElementById('expense-modal');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const notification = document.getElementById('notification');
+        const addExpenseBtn = document.getElementById('add-expense-btn');
+        const saveExpenseBtn = document.getElementById('save-expense-btn');
+        const cancelExpenseBtn = document.getElementById('cancel-expense-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const expenseAmount = document.getElementById('expense-amount');
+        const expenseDate = document.getElementById('expense-date');
+        const expenseNotes = document.getElementById('expense-notes');
+        // Define the helper function
+        function setDateToISTToday() {
+            const istDate = new Date().toLocaleDateString('en-CA', {
+                timeZone: 'Asia/Kolkata'
+            });
+            expenseDate.value = istDate;
+        }
+        setDateToISTToday();
+        let currentUser = null;
+        let expenses = [];
+        // List of all team members fetched from the users table
+        let teamUsers = [];
+        async function initApp() {
+            if (localStorage.getItem('isLoggedIn') !== 'true') {
+                window.location.href = 'login.html';
+                return;
+            }
+            const userData = localStorage.getItem('currentUser');
+            if (userData) {
+                currentUser = JSON.parse(userData);
+                displayName.textContent = currentUser.name;
+                userAvatar.textContent = currentUser.avatar;
+            }
+            notification.classList.remove('show');
+            await loadExpenses();
+        }
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.className = 'notification';
+            if (isError) {
+                notification.classList.add('error');
+            }
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        async function loadExpenses() {
+            try {
+                // Fetch expenses ordered by id (newest entries first). Ordering by id ensures that
+                // the most recently added expense appears first regardless of the amount or date.
+                const { data: expensesData, error: expensesError } = await supabase
+                    .from('expenses')
+                    .select('*')
+                    .order('id', { ascending: false });
+                if (expensesError) throw expensesError;
+                const { data: usersData, error: usersError } = await supabase
+                    .from('users')
+                    .select('*');
+                if (usersError) throw usersError;
+                // Save users for contributions calculation
+                teamUsers = usersData || [];
+                const userMap = {};
+                (usersData || []).forEach(u => {
+                    userMap[u.id] = u;
+                });
+                expenses = (expensesData || []).map(exp => {
+                    const member = userMap[exp.user_id] || {};
+                    const name = member.name || 'Unknown';
+                    const initials = name
+                        .split(' ')
+                        .map(part => part.charAt(0))
+                        .join('')
+                        .toUpperCase();
+                    return {
+                        id: exp.id,
+                        userId: exp.user_id,
+                        amount: parseFloat(exp.amount),
+                        date: exp.date,
+                        notes: exp.notes,
+                        user: {
+                            name: name,
+                            avatar: initials.slice(0, 2)
+                        }
+                    };
+                });
+                renderExpenses();
+                updateTotalCost();
+            } catch (err) {
+                console.error('Error loading expenses:', err);
+                expenses = [];
+                renderExpenses();
+                updateTotalCost();
+                showNotification('Failed to load expenses. Please try again.', true);
+            }
+        }
+        function renderExpenses() {
+            expensesContainer.innerHTML = '';
+            expenses.forEach(expense => {
+                const expenseCard = document.createElement('div');
+                expenseCard.className = 'expense-card';
+                const userInfo = document.createElement('div');
+                userInfo.className = 'expense-user-info';
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'user-avatar-small';
+                avatarDiv.textContent = expense.user.avatar;
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'user-name-small';
+                nameDiv.textContent = expense.user.name;
+                userInfo.appendChild(avatarDiv);
+                userInfo.appendChild(nameDiv);
+                expenseCard.appendChild(userInfo);
+                const amountDiv = document.createElement('div');
+                amountDiv.className = 'expense-amount';
+                amountDiv.textContent = `₹${expense.amount.toFixed(2)}`;
+                expenseCard.appendChild(amountDiv);
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'expense-date';
+                dateDiv.textContent = formatDate(expense.date);
+                expenseCard.appendChild(dateDiv);
+                const notesDiv = document.createElement('div');
+                notesDiv.className = 'expense-notes';
+                notesDiv.textContent = expense.notes;
+                expenseCard.appendChild(notesDiv);
+                // Expand/collapse functionality has been removed. Notes are always fully displayed.
+                expensesContainer.appendChild(expenseCard);
+            });
+        }
+        function updateTotalCost() {
+            const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            totalCost.textContent = total.toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            // Update team contributions summary whenever the total is recalculated
+            updateContributions();
+        }
+
+        // Calculate per-user contributions and update the contribution list
+        function updateContributions() {
+            const listContainer = document.getElementById('contribution-list');
+            if (!listContainer) return;
+            // Sum amounts for each user
+            const totals = {};
+            expenses.forEach(exp => {
+                totals[exp.userId] = (totals[exp.userId] || 0) + exp.amount;
+            });
+            // Clear previous entries
+            listContainer.innerHTML = '';
+            // Render a row for each team member
+            teamUsers.forEach(member => {
+                const row = document.createElement('div');
+                row.className = 'contribution-row';
+                if (currentUser && member.id === currentUser.id) {
+                    row.classList.add('current-member');
+                }
+                // Avatar with initials
+                const avatar = document.createElement('div');
+                avatar.className = 'contribution-avatar';
+                const initials = (member.name || '')
+                    .split(' ')
+                    .map(part => part.charAt(0))
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2);
+                avatar.textContent = initials || '?';
+                row.appendChild(avatar);
+                // Name
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'contribution-name';
+                nameSpan.textContent = member.name || 'Unknown';
+                row.appendChild(nameSpan);
+                // Amount
+                const amountSpan = document.createElement('span');
+                amountSpan.className = 'contribution-amount';
+                const amt = totals[member.id] || 0;
+                amountSpan.textContent = `₹${amt.toLocaleString('en-IN', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })}`;
+                row.appendChild(amountSpan);
+                listContainer.appendChild(row);
+            });
+        }
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+        async function saveExpense(amount, date, notes) {
+            const expensePayload = {
+                user_id: currentUser.id,
+                amount: parseFloat(amount),
+                date: date,
+                notes: notes
+            };
+            const { data, error } = await supabase
+                .from('expenses')
+                .insert(expensePayload)
+                .select()
+                .single();
+            if (error) {
+                throw error;
+            }
+            const newExpense = {
+                id: data.id,
+                userId: data.user_id,
+                amount: parseFloat(data.amount),
+                date: data.date,
+                notes: data.notes,
+                user: {
+                    name: currentUser.name,
+                    avatar: currentUser.avatar
+                }
+            };
+            expenses.unshift(newExpense);
+        }
+        addExpenseBtn.addEventListener('click', () => {
+            expenseAmount.value = '';
+            expenseNotes.value = '';
+            setDateToISTToday();
+            expenseModal.classList.remove('hidden');
+            modalOverlay.classList.remove('hidden');
+        });
+        cancelExpenseBtn.addEventListener('click', () => {
+            expenseModal.classList.add('hidden');
+            modalOverlay.classList.add('hidden');
+        });
+        saveExpenseBtn.addEventListener('click', async () => {
+            const amount = expenseAmount.value.trim();
+            const date = expenseDate.value;
+            const notes = expenseNotes.value.trim();
+            if (!amount || !date || !notes) {
+                showNotification('Please fill all fields', true);
+                return;
+            }
+            if (parseFloat(amount) <= 0) {
+                showNotification('Amount must be greater than zero', true);
+                return;
+            }
+            try {
+                await saveExpense(amount, date, notes);
+                renderExpenses();
+                updateTotalCost();
+                expenseModal.classList.add('hidden');
+                modalOverlay.classList.add('hidden');
+                showNotification('Expense added successfully!');
+            } catch (error) {
+                console.error('Error saving expense:', error);
+                showNotification('Failed to add expense. Please try again.', true);
+            }
+        });
+        modalOverlay.addEventListener('click', () => {
+            expenseModal.classList.add('hidden');
+            modalOverlay.classList.add('hidden');
+        });
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('isLoggedIn');
+            currentUser = null;
+            window.location.href = 'login.html';
+        });
+        initApp();
+    </script>
+</body>
+
+</html>
