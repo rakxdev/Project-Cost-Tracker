@@ -628,6 +628,34 @@
             pointer-events: none;
             /* ensures clicking still opens the date picker */
         }
+
+        .settlement-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 198, 255, 0.1);
+        }
+
+        .settlement-row:last-child {
+            border-bottom: none;
+        }
+
+        .settlement-payer {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .settlement-receiver {
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        .settlement-amount {
+            font-weight: 600;
+            color: var(--light);
+        }
     </style>
 </head>
 
@@ -664,6 +692,8 @@
                 <div class="contribution-card">
                     <h3 class="contribution-title">Team Contributions</h3>
                     <div id="contribution-list"></div>
+                    <h3 class="contribution-title" style="margin-top: 20px;">Settlement Summary</h3>
+                    <div id="settlement-summary-list"></div>
                 </div>
             </div>
         </div>
@@ -842,6 +872,86 @@
             });
             // Update team contributions summary whenever the total is recalculated
             updateContributions();
+            updateSettlementSummary();
+        }
+
+        function updateSettlementSummary() {
+            const settlementContainer = document.getElementById('settlement-summary-list');
+            if (!settlementContainer) return;
+
+            const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const memberCount = teamUsers.length;
+            if (memberCount === 0 || total === 0) {
+                settlementContainer.innerHTML = '<p style="font-style: italic; color: #aaa;">No settlements needed.</p>';
+                return;
+            }
+
+            const equalShare = total / memberCount;
+
+            const contributions = {};
+            teamUsers.forEach(member => {
+                contributions[member.id] = { name: member.name, balance: 0 };
+            });
+
+            expenses.forEach(exp => {
+                if (contributions[exp.userId]) {
+                    contributions[exp.userId].balance += exp.amount;
+                }
+            });
+
+            const balances = Object.keys(contributions).map(id => {
+                const user = contributions[id];
+                return {
+                    id: id,
+                    name: user.name,
+                    balance: user.balance - equalShare
+                };
+            });
+
+            const payers = balances.filter(m => m.balance < 0).sort((a, b) => a.balance - b.balance);
+            const receivers = balances.filter(m => m.balance > 0).sort((a, b) => b.balance - a.balance);
+
+            const settlements = [];
+
+            while (payers.length > 0 && receivers.length > 0) {
+                const payer = payers[0];
+                const receiver = receivers[0];
+                const amount = Math.min(-payer.balance, receiver.balance);
+
+                settlements.push({
+                    from: payer.name,
+                    to: receiver.name,
+                    amount: amount
+                });
+
+                payer.balance += amount;
+                receiver.balance -= amount;
+
+                if (Math.abs(payer.balance) < 0.01) {
+                    payers.shift();
+                }
+                if (Math.abs(receiver.balance) < 0.01) {
+                    receivers.shift();
+                }
+            }
+
+            if (settlements.length === 0) {
+                settlementContainer.innerHTML = '<p style="font-style: italic; color: #aaa;">All expenses are settled.</p>';
+                return;
+            }
+
+            settlementContainer.innerHTML = '';
+            settlements.forEach(s => {
+                const row = document.createElement('div');
+                row.className = 'settlement-row'; // You can style this class
+                row.innerHTML = `
+                    <span class="settlement-payer">${s.from}</span>
+                    <i class="fas fa-arrow-right" style="color: var(--accent); margin: 0 10px;"></i>
+                    <span class="settlement-receiver">${s.to}</span>
+                    <span class="settlement-amount">₹${s.amount.toFixed(2)}</span>
+                `;
+                settlementContainer.appendChild(row);
+            });
         }
 
         // Calculate per-user contributions and update the contribution list
