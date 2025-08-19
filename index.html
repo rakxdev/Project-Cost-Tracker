@@ -738,19 +738,27 @@
         }
 
         .chart-card {
-            background: var(--card-bg);
+            background: linear-gradient(145deg, rgba(15, 20, 40, 0.8), rgba(25, 30, 50, 0.8));
             border: 1px solid var(--card-border);
-            border-radius: 15px;
+            border-radius: 20px;
             padding: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 0 15px rgba(0, 198, 255, 0.1), 0 0 30px rgba(255, 45, 117, 0.1);
+            backdrop-filter: blur(5px);
         }
 
         .chart-card h3 {
             text-align: center;
             margin-bottom: 25px;
-            font-weight: 600;
-            font-size: 1.2rem;
-            color: var(--light);
+            font-weight: 700;
+            font-size: 1.4rem;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .chart-card canvas {
+            min-height: 400px;
+            max-height: 400px;
         }
     </style>
 </head>
@@ -1138,66 +1146,107 @@
             if (weeklyChartInstance) weeklyChartInstance.destroy();
             if (monthlyChartInstance) monthlyChartInstance.destroy();
 
+            const neonColors = ['#00c6ff', '#ff2d75', '#00e676', '#ffc400', '#c56cf0', '#ff7043'];
+            const transparentColors = neonColors.map(color => color + '33');
+
+            // --- Weekly Expense Trend (Line Chart) ---
             const weeklyData = expenses.reduce((acc, exp) => {
-                const weekStart = dateFns.startOfWeek(new Date(exp.date), { weekStartsOn: 1 }).toISOString().split('T')[0];
-                acc[weekStart] = (acc[weekStart] || 0) + exp.amount;
+                const weekStart = dateFns.startOfWeek(new Date(exp.date), { weekStartsOn: 1 });
+                const weekKey = dateFns.format(weekStart, 'yyyy-MM-dd');
+                acc[weekKey] = (acc[weekKey] || 0) + exp.amount;
                 return acc;
             }, {});
 
             const sortedWeeks = Object.keys(weeklyData).sort();
+            const weeklyLabels = sortedWeeks.map((_, index) => `Week ${index + 1}`);
 
             const weeklyCtx = document.getElementById('weekly-expenses-chart').getContext('2d');
             weeklyChartInstance = new Chart(weeklyCtx, {
                 type: 'line',
                 data: {
-                    labels: sortedWeeks,
+                    labels: weeklyLabels,
                     datasets: [{
-                        label: 'Total Expenses per Week',
+                        label: 'Total Expenses',
                         data: sortedWeeks.map(week => weeklyData[week]),
-                        borderColor: 'var(--primary)',
-                        backgroundColor: 'rgba(0, 198, 255, 0.2)',
+                        borderColor: neonColors[0],
+                        backgroundColor: transparentColors[0],
                         fill: true,
-                        tension: 0.3
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: neonColors[0],
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
-                        x: { type: 'time', time: { unit: 'week' }, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--light)' } },
-                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--light)' } }
+                        x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: 'var(--light)' } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: {
+                                color: 'var(--light)',
+                                callback: (value) => `₹${value}`
+                            }
+                        }
                     },
-                    plugins: { legend: { labels: { color: 'var(--light)' } } }
+                    plugins: {
+                        legend: { labels: { color: 'var(--light)', font: { size: 14 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `Total: ₹${context.raw.toFixed(2)}`
+                            }
+                        }
+                    }
                 }
             });
 
+            // --- Monthly Contributions (Stacked Bar Chart) ---
             const monthlyData = expenses.reduce((acc, exp) => {
-                const monthStart = dateFns.startOfMonth(new Date(exp.date)).toISOString().split('T')[0];
-                if (!acc[monthStart]) acc[monthStart] = {};
-                acc[monthStart][exp.userId] = (acc[monthStart][exp.userId] || 0) + exp.amount;
+                const monthStart = dateFns.startOfMonth(new Date(exp.date));
+                const monthKey = dateFns.format(monthStart, 'yyyy-MM-01');
+                if (!acc[monthKey]) acc[monthKey] = {};
+                acc[monthKey][exp.userId] = (acc[monthKey][exp.userId] || 0) + exp.amount;
                 return acc;
             }, {});
 
             const sortedMonths = Object.keys(monthlyData).sort();
-            const colors = ['var(--primary)', 'var(--accent)', 'var(--success)', '#f9a825', '#9c27b0', '#ff7043'];
+            const monthlyLabels = sortedMonths.map(month => dateFns.format(new Date(month), 'MMMM yyyy'));
+
             const monthlyDatasets = teamUsers.map((user, index) => ({
                 label: user.name,
                 data: sortedMonths.map(month => (monthlyData[month] && monthlyData[month][user.id]) || 0),
-                borderColor: colors[index % colors.length],
-                backgroundColor: 'transparent',
-                tension: 0.3,
+                backgroundColor: neonColors[(index + 1) % neonColors.length],
             }));
 
             const monthlyCtx = document.getElementById('monthly-contributions-chart').getContext('2d');
             monthlyChartInstance = new Chart(monthlyCtx, {
-                type: 'line',
-                data: { labels: sortedMonths, datasets: monthlyDatasets },
+                type: 'bar',
+                data: { labels: monthlyLabels, datasets: monthlyDatasets },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
-                        x: { type: 'time', time: { unit: 'month' }, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--light)' } },
-                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--light)' } }
+                        x: { stacked: true, grid: { display: false }, ticks: { color: 'var(--light)' } },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: {
+                                color: 'var(--light)',
+                                callback: (value) => `₹${value}`
+                            }
+                        }
                     },
-                    plugins: { legend: { labels: { color: 'var(--light)' } } }
+                    plugins: {
+                        legend: { labels: { color: 'var(--light)', font: { size: 14 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: ₹${context.raw.toFixed(2)}`
+                            }
+                        }
+                    }
                 }
             });
         }
