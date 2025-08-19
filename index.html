@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minor Project Cost Tracker</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <style>
         :root {
             --primary: #00c6ff;
@@ -656,6 +659,99 @@
             font-weight: 600;
             color: var(--light);
         }
+
+        /* Hamburger Menu */
+        .hamburger-menu {
+            background: none;
+            border: none;
+            color: var(--light);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Side Navigation */
+        .side-nav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1001;
+            top: 0;
+            right: 0;
+            background-color: var(--darker);
+            overflow-x: hidden;
+            transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            padding-top: 60px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        .side-nav .nav-link {
+            padding: 15px 20px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #aaa;
+            display: block;
+            transition: 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .side-nav .nav-link:hover {
+            color: var(--light);
+            background: rgba(0, 198, 255, 0.05);
+            border-left-color: var(--accent);
+        }
+
+        .side-nav .nav-link.active {
+            color: var(--primary);
+            font-weight: bold;
+            border-left-color: var(--primary);
+             background: rgba(0, 198, 255, 0.1);
+        }
+
+        .side-nav .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 2.2rem;
+            color: #888;
+        }
+
+        .side-nav .close-btn:hover {
+            color: var(--light);
+        }
+
+        /* Charts View */
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        @media (min-width: 1200px) {
+            .charts-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .chart-card h3 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--light);
+        }
     </style>
 </head>
 
@@ -671,33 +767,54 @@
             <div class="user-info">
                 <div class="user-avatar" id="user-avatar">U</div>
                 <div id="user-name">User Name</div>
-                <button class="logout-btn" id="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+    <button class="hamburger-menu" id="hamburger-menu">
+        <i class="fas fa-bars"></i>
                 </button>
             </div>
         </header>
-        <div class="project-header">
-            <!-- Wrap project overview and team contributions for side-by-side layout -->
-            <div class="project-details">
-                <div class="project-overview">
-                    <h2 class="project-name">Smart Hybrid Ac-Dc Power Supply With Bidirectional Power Flow Control</h2>
-                    <p>Total Project Cost</p>
-                    <div class="total-cost">
-                        ₹<span class="cost-amount" id="total-cost">0.00</span>
-                    </div>
-                    <button class="add-expense-btn" id="add-expense-btn">
-                        <i class="fas fa-plus-circle"></i> Add Daily Expense
-                    </button>
+<div id="side-nav" class="side-nav">
+    <a href="javascript:void(0)" class="close-btn" id="close-nav-btn">&times;</a>
+    <a href="#" id="nav-dashboard" class="nav-link active">Dashboard</a>
+    <a href="#" id="nav-graphs" class="nav-link">Graphs</a>
+    <a href="#" id="nav-logout" class="nav-link">Logout</a>
+</div>
+<div id="dashboard-view">
+    <div class="project-header">
+        <!-- Wrap project overview and team contributions for side-by-side layout -->
+        <div class="project-details">
+            <div class="project-overview">
+                <h2 class="project-name">Smart Hybrid Ac-Dc Power Supply With Bidirectional Power Flow Control</h2>
+                <p>Total Project Cost</p>
+                <div class="total-cost">
+                    ₹<span class="cost-amount" id="total-cost">0.00</span>
                 </div>
-                <div class="contribution-card">
-                    <h3 class="contribution-title">Team Contributions</h3>
-                    <div id="contribution-list"></div>
-                    <h3 class="contribution-title" style="margin-top: 20px;">Settlement Summary</h3>
-                    <div id="settlement-summary-list"></div>
+                <button class="add-expense-btn" id="add-expense-btn">
+                    <i class="fas fa-plus-circle"></i> Add Daily Expense
+                </button>
+                    </div>
+            <div class="contribution-card">
+                <h3 class="contribution-title">Team Contributions</h3>
+                <div id="contribution-list"></div>
+                <h3 class="contribution-title" style="margin-top: 20px;">Settlement Summary</h3>
+                <div id="settlement-summary-list"></div>
+            </div>
+                </div>
+    </div>
+    <div class="expenses-container" id="expenses-container"></div>
+</div>
+<div id="graphs-view" class="hidden">
+    <h2 class="view-title" style="text-align: center; margin-bottom: 30px; font-size: 1.8rem; background: linear-gradient(to right, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent;">Project Analytics</h2>
+    <div class="charts-container">
+        <div class="chart-card">
+            <h3>Weekly Expense Trend</h3>
+            <canvas id="weekly-expenses-chart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Monthly Contribution Trends</h3>
+            <canvas id="monthly-contributions-chart"></canvas>
                 </div>
             </div>
         </div>
-        <div class="expenses-container" id="expenses-container"></div>
         <div id="modal-overlay" class="hidden"></div>
     </div>
     <div id="expense-modal" class="auth-container hidden"
@@ -742,8 +859,17 @@
         const addExpenseBtn = document.getElementById('add-expense-btn');
         const saveExpenseBtn = document.getElementById('save-expense-btn');
         const cancelExpenseBtn = document.getElementById('cancel-expense-btn');
-        const logoutBtn = document.getElementById('logout-btn');
         const expenseAmount = document.getElementById('expense-amount');
+
+        // Navigation Elements
+        const hamburgerMenu = document.getElementById('hamburger-menu');
+        const sideNav = document.getElementById('side-nav');
+        const closeNavBtn = document.getElementById('close-nav-btn');
+        const navDashboard = document.getElementById('nav-dashboard');
+        const navGraphs = document.getElementById('nav-graphs');
+        const navLogout = document.getElementById('nav-logout');
+        const dashboardView = document.getElementById('dashboard-view');
+        const graphsView = document.getElementById('graphs-view');
         const expenseDate = document.getElementById('expense-date');
         const expenseNotes = document.getElementById('expense-notes');
         // Define the helper function
@@ -758,6 +884,9 @@
         let expenses = [];
         // List of all team members fetched from the users table
         let teamUsers = [];
+        let weeklyChartInstance = null;
+        let monthlyChartInstance = null;
+
         async function initApp() {
             if (localStorage.getItem('isLoggedIn') !== 'true') {
                 window.location.href = 'login.html';
@@ -1004,6 +1133,75 @@
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             return new Date(dateString).toLocaleDateString(undefined, options);
         }
+
+        function renderCharts() {
+            if (weeklyChartInstance) weeklyChartInstance.destroy();
+            if (monthlyChartInstance) monthlyChartInstance.destroy();
+
+            const weeklyData = expenses.reduce((acc, exp) => {
+                const weekStart = dateFns.startOfWeek(new Date(exp.date), { weekStartsOn: 1 }).toISOString().split('T')[0];
+                acc[weekStart] = (acc[weekStart] || 0) + exp.amount;
+                return acc;
+            }, {});
+
+            const sortedWeeks = Object.keys(weeklyData).sort();
+
+            const weeklyCtx = document.getElementById('weekly-expenses-chart').getContext('2d');
+            weeklyChartInstance = new Chart(weeklyCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedWeeks,
+                    datasets: [{
+                        label: 'Total Expenses per Week',
+                        data: sortedWeeks.map(week => weeklyData[week]),
+                        borderColor: 'var(--primary)',
+                        backgroundColor: 'rgba(0, 198, 255, 0.2)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { type: 'time', time: { unit: 'week' }, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--light)' } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--light)' } }
+                    },
+                    plugins: { legend: { labels: { color: 'var(--light)' } } }
+                }
+            });
+
+            const monthlyData = expenses.reduce((acc, exp) => {
+                const monthStart = dateFns.startOfMonth(new Date(exp.date)).toISOString().split('T')[0];
+                if (!acc[monthStart]) acc[monthStart] = {};
+                acc[monthStart][exp.userId] = (acc[monthStart][exp.userId] || 0) + exp.amount;
+                return acc;
+            }, {});
+
+            const sortedMonths = Object.keys(monthlyData).sort();
+            const colors = ['var(--primary)', 'var(--accent)', 'var(--success)', '#f9a825', '#9c27b0', '#ff7043'];
+            const monthlyDatasets = teamUsers.map((user, index) => ({
+                label: user.name,
+                data: sortedMonths.map(month => (monthlyData[month] && monthlyData[month][user.id]) || 0),
+                borderColor: colors[index % colors.length],
+                backgroundColor: 'transparent',
+                tension: 0.3,
+            }));
+
+            const monthlyCtx = document.getElementById('monthly-contributions-chart').getContext('2d');
+            monthlyChartInstance = new Chart(monthlyCtx, {
+                type: 'line',
+                data: { labels: sortedMonths, datasets: monthlyDatasets },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { type: 'time', time: { unit: 'month' }, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--light)' } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--light)' } }
+                    },
+                    plugins: { legend: { labels: { color: 'var(--light)' } } }
+                }
+            });
+        }
+
         async function saveExpense(amount, date, notes) {
             const expensePayload = {
                 user_id: currentUser.id,
@@ -1071,12 +1269,43 @@
             expenseModal.classList.add('hidden');
             modalOverlay.classList.add('hidden');
         });
-        logoutBtn.addEventListener('click', () => {
+
+        // Navigation Logic
+        hamburgerMenu.addEventListener('click', () => {
+            sideNav.style.width = '250px';
+        });
+
+        closeNavBtn.addEventListener('click', () => {
+            sideNav.style.width = '0';
+        });
+
+        navDashboard.addEventListener('click', (e) => {
+            e.preventDefault();
+            dashboardView.classList.remove('hidden');
+            graphsView.classList.add('hidden');
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            navDashboard.classList.add('active');
+            sideNav.style.width = '0';
+        });
+
+        navGraphs.addEventListener('click', (e) => {
+            e.preventDefault();
+            dashboardView.classList.add('hidden');
+            graphsView.classList.remove('hidden');
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            navGraphs.classList.add('active');
+            renderCharts();
+            sideNav.style.width = '0';
+        });
+
+        navLogout.addEventListener('click', (e) => {
+            e.preventDefault();
             localStorage.removeItem('currentUser');
             localStorage.removeItem('isLoggedIn');
             currentUser = null;
             window.location.href = 'login.html';
         });
+
         initApp();
     </script>
 </body>
